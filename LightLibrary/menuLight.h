@@ -736,4 +736,30 @@ public:
 };
 
 
+// FNV-1a 32-bit
+uint32_t fnv1a32(const std::string &s) {
+    const uint32_t FNV_PRIME = 0x01000193u;
+    uint32_t hash = 0x811C9DC5u; // FNV offset basis
+    for (unsigned char c : s) {
+        hash ^= static_cast<uint32_t>(c);
+        hash *= FNV_PRIME;
+    }
+    return hash;
+}
 
+// Integer hue 0..359
+unsigned int hue_from_string_int(const std::string &s) {
+    uint32_t h = fnv1a32(s);
+    return h % 360u; // 0..359
+}
+
+// Floating-point hue 0..360 (continuous)
+double hue_from_string_double(const std::string &s) {
+    uint32_t h = fnv1a32(s);
+    // map [0, 2^32-1] -> [0.0, 360.0)
+    return (static_cast<double>(h) / 4294967296.0) * 360.0;
+}
+
+void printMessage(string sender, string msg){
+    cout << "<" << SET_BOLD << HSLtoRGB(hue_from_string_double(sender), 0.9, 0.69) << sender << RESET_ALL << "> " << msg << "\n";
+}
