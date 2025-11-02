@@ -29,7 +29,7 @@ color blueToPurple(double x) {
 
 int main()
 {
-    cout << "Resize the console and set your desired font size (ctrl + + or ctrl + scroll wheel)\nThe interactive menu will get resize acordingly."
+    cout << "Resize the console and set your desired font size (ctrl + + or ctrl + scroll wheel)\nThe interactive menu will get resize acordingly.";
     getch();
     cli_menu menu;
     menu.clearConsole();
