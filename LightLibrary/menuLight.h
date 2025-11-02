@@ -712,6 +712,7 @@ public:
 
             option_length += bar_right.length();
 
+            start_x = 0;
             switch(_menu.getOptionsAlignment()){
             case AvailableAlignments::LEFT:
                 break;
