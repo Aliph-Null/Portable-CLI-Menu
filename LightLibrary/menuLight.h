@@ -22,7 +22,7 @@
 
 /* Console cursor macro (kept for compatibility) */
 #ifdef _WIN32
-    #define cursor(x, y) SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{x, y})
+    #define cursor(x, y) SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{(short)x,(short)y})
 #else
     #define cursor(x, y) std::cout << "\033[" << (y+1) << ";" << (x+1) << "H"
 #endif
@@ -260,7 +260,7 @@ const std::vector<UI_Option_Bar> bars = {
 
 
 color defaultGradient(double x){
-    return {x*255, sin(x*3.1415) * 200, 255};
+    return {unsigned char(x*255), unsigned char(sin(x*3.1415) * 200), 255};
 }
 
 class subMenu {
@@ -466,7 +466,7 @@ public:
         if (index < 0 || index >= static_cast<int>(submenus.size())) return;
         submenus.erase(submenus.begin() + index);
         if (selectedSubMenu >= static_cast<int>(submenus.size()))
-            selectedSubMenu = std::max(0, static_cast<int>(submenus.size()) - 1);
+            selectedSubMenu = max(0, static_cast<int>(submenus.size()) - 1);
     }
 
     void clearSubMenus() {
