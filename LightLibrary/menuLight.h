@@ -1,6 +1,5 @@
 #pragma once
 
-/* Standard includes */
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -10,24 +9,21 @@
 #include <locale>
 #include <codecvt>
 #include <functional>
+#include <conio.h>
 
 #ifdef _WIN32
     #include <windows.h>
-    #include <conio.h>
 #else
     #include <sys/ioctl.h>
     #include <unistd.h>
-    #include <conio.h> /* if you use a platform-specific getch implementation, keep it */
 #endif
 
-/* Console cursor macro (kept for compatibility) */
 #ifdef _WIN32
-    #define cursor(x, y) SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{(short)x,(short)y})
+    #define cursor(x, y) SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), (COORD){x, y})
 #else
     #define cursor(x, y) std::cout << "\033[" << (y+1) << ";" << (x+1) << "H"
 #endif
 
-/* ANSI sequences and utility macros (kept as macros for compatibility) */
 #define START_SEQUENCE "\033["
 #define ESC_COLOR_CODE "\033["
 #define FOREGROUND_SEQUENCE "38;2;"
@@ -35,7 +31,7 @@
 #define SEQUENCE_ARG_SEPARATOR ";"
 #define CLOSE_SEQUENCE "m"
 
-#define color_sequence_max_length 22
+#define Color_sequence_max_length 22
 
 #define SET_BOLD "\033[1m"
 #define RESET_BOLD "\033[22m"
@@ -47,37 +43,74 @@
 
 #define ERASE_CONSOLE "\033c"
 
-/* Key codes in use (kept for compatibility) */
 #define KEY_UP 72
 #define KEY_DOWN 80
 
-/* --------------------------------------------------------------------------
-   Simple POD 'color' representing an RGB triple (0..255)
-   -------------------------------------------------------------------------- */
-/*
- * color - a simple RGB container. Public members for convenient aggregate init.
- */
-struct color {
-    unsigned char r = 0;
-    unsigned char g = 0;
-    unsigned char b = 0;
+class Color {
+private:
+    unsigned char r, g, b;
 
-    bool operator==(const color& b) const {
-        return this->r == b.r && this->g == b.g && this->b == b.b;
+public:
+    Color(unsigned char red = 0, unsigned char green = 0, unsigned char blue = 0)
+        : r(red), g(green), b(blue) {}
+
+    unsigned char R() const { return r; }
+    unsigned char G() const { return g; }
+    unsigned char B() const { return b; }
+
+    void setR(unsigned char red) { r = red; }
+    void setG(unsigned char green) { g = green; }
+    void setB(unsigned char blue) { b = blue; }
+
+    bool operator==(const Color& other) const {
+        return r == other.r && g == other.g && b == other.b;
     }
 
-    bool operator!=(const color& b) const{
-        return !(*this == b);
+    bool operator!=(const Color& other) const {
+        return !(*this == other);
+    }
+
+    virtual std::ostream& print(std::ostream& os) const {
+        os << ESC_COLOR_CODE << FOREGROUND_SEQUENCE
+           << static_cast<int>(r) << SEQUENCE_ARG_SEPARATOR
+           << static_cast<int>(g) << SEQUENCE_ARG_SEPARATOR
+           << static_cast<int>(b) << CLOSE_SEQUENCE;
+        return os;
     }
 };
 
-// Overload << operator for color
-std::ostream& operator<<(std::ostream& os, const color& c) {
-    os << ESC_COLOR_CODE << FOREGROUND_SEQUENCE
-       << static_cast<int>(c.r) << SEQUENCE_ARG_SEPARATOR
-       << static_cast<int>(c.g) << SEQUENCE_ARG_SEPARATOR
-       << static_cast<int>(c.b) << CLOSE_SEQUENCE;
-    return os;
+class ColorBackground : public Color {
+private:
+    unsigned char br, bg, bb;
+
+public:
+    ColorBackground(unsigned char red = 0, unsigned char green = 0, unsigned char blue = 0,
+                    unsigned char bgRed = 0, unsigned char bgGreen = 0, unsigned char bgBlue = 0)
+        : Color(red, green, blue), br(bgRed), bg(bgGreen), bb(bgBlue) {}
+
+    unsigned char Br() const { return br; }
+    unsigned char Bg() const { return bg; }
+    unsigned char Bb() const { return bb; }
+
+    void setBr(unsigned char val) { br = val; }
+    void setBg(unsigned char val) { bg = val; }
+    void setBb(unsigned char val) { bb = val; }
+
+    std::ostream& print(std::ostream& os) const override {
+        os << ESC_COLOR_CODE << FOREGROUND_SEQUENCE
+           << static_cast<int>(this->R()) << SEQUENCE_ARG_SEPARATOR
+           << static_cast<int>(this->G()) << SEQUENCE_ARG_SEPARATOR
+           << static_cast<int>(this->B()) << CLOSE_SEQUENCE
+           << ESC_COLOR_CODE << BACKGROUND_SEQUENCE
+           << static_cast<int>(this->Br()) << SEQUENCE_ARG_SEPARATOR
+           << static_cast<int>(this->Bg()) << SEQUENCE_ARG_SEPARATOR
+           << static_cast<int>(this->Bb()) << CLOSE_SEQUENCE;
+        return os;
+    }
+};
+
+inline std::ostream& operator<<(std::ostream& os, const Color& c) {
+    return c.print(os);
 }
 
 struct coords {
@@ -95,20 +128,20 @@ namespace AvailableAlignments{
 
 namespace beautyPrint{
     inline void print(std::string str){std::cerr<<str;}
-    inline void print(std::string str, color c){std::cerr<<c<<str;}
-    void print(std::string str, std::function<color(double)> colorFunction){
+    inline void print(std::string str, Color c){std::cerr<<c<<str;}
+    void print(std::string str, std::function<Color(double)> ColorFunction){
         std::string str_toPrint = "";
         int len = str.length();
         for(int i = 0; i < len; i++){
             double x = (double)i / (double)len;
-            color c = colorFunction(x);
+            Color c = ColorFunction(x);
             str_toPrint += ESC_COLOR_CODE;
             str_toPrint += FOREGROUND_SEQUENCE;
-            str_toPrint += std::to_string(static_cast<int>(c.r));
+            str_toPrint += std::to_string(static_cast<int>(c.R()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.g));
+            str_toPrint += std::to_string(static_cast<int>(c.G()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.b));
+            str_toPrint += std::to_string(static_cast<int>(c.B()));
             str_toPrint += CLOSE_SEQUENCE;
             str_toPrint += str[i];
         }
@@ -117,8 +150,8 @@ namespace beautyPrint{
     }
 
     inline void print(coords pos, std::string str){cursor(pos.x, pos.y); print(str);}
-    inline void print(coords pos, std::string str, color c){cursor(pos.x, pos.y); print(str, c);}
-    void print(coords pos, std::string str, std::function<color(double)> colorFunction){cursor(pos.x, pos.y); print(str, colorFunction);}
+    inline void print(coords pos, std::string str, Color c){cursor(pos.x, pos.y); print(str, c);}
+    void print(coords pos, std::string str, std::function<Color(double)> ColorFunction){cursor(pos.x, pos.y); print(str, ColorFunction);}
 
     //where x is the width and y is the y
     void print(coords pos, std::string str, AvailableAlignments::EnumAlignment align){
@@ -141,7 +174,7 @@ namespace beautyPrint{
     }
 
     //where x is the width and y is the y
-    void print(coords pos, std::string str, AvailableAlignments::EnumAlignment align, color c){
+    void print(coords pos, std::string str, AvailableAlignments::EnumAlignment align, Color c){
         int start_x = 0;
         switch(align){
             case AvailableAlignments::LEFT:
@@ -161,7 +194,7 @@ namespace beautyPrint{
     }
 
     //where x is the width and y is the y
-    void print(coords pos, std::string str, AvailableAlignments::EnumAlignment align, std::function<color(double)> colorFunction){
+    void print(coords pos, std::string str, AvailableAlignments::EnumAlignment align, std::function<Color(double)> ColorFunction){
         int start_x = 0;
         switch(align){
             case AvailableAlignments::LEFT:
@@ -177,7 +210,7 @@ namespace beautyPrint{
             default:
                 break;
         }
-        print({start_x, pos.y}, str, colorFunction);
+        print({start_x, pos.y}, str, ColorFunction);
     }
 }
 
@@ -187,15 +220,15 @@ namespace beautyPrint{
    - kept as a free function to minimize API changes
    -------------------------------------------------------------------------- */
 /*
- * HSLtoRGB(h, s, l) -> color
+ * HSLtoRGB(h, s, l) -> Color
  *
  * h: hue in degrees (any value; normalized internally to [0,360))
  * s: saturation [0..1]
  * l: lightness  [0..1]
  *
- * Returns an 8-bit per channel color.
+ * Returns an 8-bit per channel Color.
  */
-inline color HSLtoRGB(double h, double s, double l) {
+inline Color HSLtoRGB(double h, double s, double l) {
     h = std::fmod(h, 360.0);
     if (h < 0.0) h += 360.0;
 
@@ -212,10 +245,10 @@ inline color HSLtoRGB(double h, double s, double l) {
     else if (h < 300.0) { r1 = x; g1 = 0.0; b1 = c; }
     else                { r1 = c; g1 = 0.0; b1 = x; }
 
-    color result;
-    result.r = static_cast<unsigned char>(std::round((r1 + m) * 255.0));
-    result.g = static_cast<unsigned char>(std::round((g1 + m) * 255.0));
-    result.b = static_cast<unsigned char>(std::round((b1 + m) * 255.0));
+    Color result;
+    result.setR(static_cast<unsigned char>(std::round((r1 + m) * 255.0)));
+    result.setG(static_cast<unsigned char>(std::round((g1 + m) * 255.0)));
+    result.setB(static_cast<unsigned char>(std::round((b1 + m) * 255.0)));
     return result;
 }
 
@@ -223,7 +256,7 @@ class UI_Option {
 public:
     UI_Option(const std::string& str) : text(str) {}
     UI_Option(const std::string& str, void(*f)()): text(str) { Subscribe(f);}
-    UI_Option(const std::string& str, color overWrite, void(*f)()): text(str), overwriteColor(overWrite){ Subscribe(f);}
+    UI_Option(const std::string& str, Color overWrite, void(*f)()): text(str), overwriteColor(overWrite){ Subscribe(f);}
 
     void Subscribe(void(*func)()) {
         callBackList.emplace_back(func);
@@ -242,7 +275,7 @@ public:
 
     std::string text;
     std::vector<void(*)()> callBackList;
-    color overwriteColor = {0,0,0};
+    Color overwriteColor = {0,0,0};
 };
 
 struct UI_Option_Bar {
@@ -250,7 +283,7 @@ struct UI_Option_Bar {
     std::string after_option;
     std::string selected_before;
     std::string selected_after;
-    color bar_color = {0, 0, 0};
+    Color bar_Color = {0, 0, 0};
 };
 
 const std::vector<UI_Option_Bar> bars = {
@@ -259,8 +292,8 @@ const std::vector<UI_Option_Bar> bars = {
 };
 
 
-color defaultGradient(double x){
-    return {unsigned char(x*255), unsigned char(sin(x*3.1415) * 200), 255};
+Color defaultGradient(double x){
+    return {x*255, sin(x*3.1415) * 200, 255};
 }
 
 class subMenu {
@@ -269,15 +302,15 @@ private:
     std::vector<UI_Option> options;
     int selectedOption = 0;
 
-    color selectedColor{255, 255, 0};
-    color defaultColor{250, 250, 250};
-    color titleColor{0, 0, 0};
+    Color selectedColor{255, 255, 0};
+    Color defaultColor{250, 250, 250};
+    Color titleColor{0, 0, 0};
 
     AvailableAlignments::EnumAlignment titleAlignment = AvailableAlignments::CENTER;
     AvailableAlignments::EnumAlignment optionsAlignment = AvailableAlignments::CENTER;
     UI_Option_Bar bar = bars[0];
 
-    std::function<color(double)> colorFunction = defaultGradient;
+    std::function<Color(double)> ColorFunction = defaultGradient;
 
 public:
     /* =========================
@@ -291,7 +324,7 @@ public:
         : name(n), options(opts), selectedOption(0) {}
 
     subMenu(const std::string& n, const std::vector<UI_Option>& opts,
-            color def, color sel, color title = {0, 0, 0},
+            Color def, Color sel, Color title = {0, 0, 0},
             AvailableAlignments::EnumAlignment align = AvailableAlignments::CENTER,
             const UI_Option_Bar& b = bars[0])
         : name(n),
@@ -318,13 +351,13 @@ public:
             options.push_back(opt);
     }
 
-    void setSelectedColor(color c) { selectedColor = c; }
+    void setSelectedColor(Color c) { selectedColor = c; }
 
-    void setDefaultColor(color c) { defaultColor = c; }
+    void setDefaultColor(Color c) { defaultColor = c; }
 
-    void setTitleColor(color c) { titleColor = c; }
+    void setTitleColor(Color c) { titleColor = c; }
 
-    void setTitleColor(std::function<color(double)> new_color_function) { colorFunction = new_color_function; }
+    void setTitleColor(std::function<Color(double)> new_Color_function) { ColorFunction = new_Color_function; }
 
     void setTitleAlignment(AvailableAlignments::EnumAlignment a) { titleAlignment = a; }
     void setOptionsAlignment(AvailableAlignments::EnumAlignment a) { optionsAlignment = a; }
@@ -351,13 +384,13 @@ public:
         return &options[selectedOption];
     }
 
-    color getSelectedColor() const { return selectedColor; }
+    Color getSelectedColor() const { return selectedColor; }
 
-    color getDefaultColor() const { return defaultColor; }
+    Color getDefaultColor() const { return defaultColor; }
 
-    color getTitleColor() const { return titleColor; }
+    Color getTitleColor() const { return titleColor; }
 
-    color getTitleColor(double x) {return colorFunction ? colorFunction(x) : titleColor;}
+    Color getTitleColor(double x) {return ColorFunction ? ColorFunction(x) : titleColor;}
 
     AvailableAlignments::EnumAlignment getTitleAlignment() const { return titleAlignment; }
 
@@ -466,7 +499,7 @@ public:
         if (index < 0 || index >= static_cast<int>(submenus.size())) return;
         submenus.erase(submenus.begin() + index);
         if (selectedSubMenu >= static_cast<int>(submenus.size()))
-            selectedSubMenu = max(0, static_cast<int>(submenus.size()) - 1);
+            selectedSubMenu = std::max(0, static_cast<int>(submenus.size()) - 1);
     }
 
     void clearSubMenus() {
@@ -598,24 +631,24 @@ public:
         subMenu &_menu = submenus[selectedSubMenu];
         int top_offset = 2;
 
-        //print title ~ colored
+        //print title ~ Colored
         std::string char_title = _menu.getName();
         int title_length = char_title.length();
-        int title_abs_length = (color_sequence_max_length + 1) * title_length;
+        int title_abs_length = (Color_sequence_max_length + 1) * title_length;
         std::string title; title.reserve(title_abs_length);
         for(int i = 0; i < title_length; i++){
-            color char_color = _menu.getTitleColor();
-            if(char_color == color{0, 0, 0}){
+            Color char_Color = _menu.getTitleColor();
+            if(char_Color == Color{0, 0, 0}){
                 double x = (double)i / double(title_length);
-                char_color = _menu.getTitleColor(x);
+                char_Color = _menu.getTitleColor(x);
             }
             title += ESC_COLOR_CODE;
             title += FOREGROUND_SEQUENCE;
-            title += std::to_string(static_cast<int>(char_color.r));
+            title += std::to_string(static_cast<int>(char_Color.R()));
             title += SEQUENCE_ARG_SEPARATOR;
-            title += std::to_string(static_cast<int>(char_color.g));
+            title += std::to_string(static_cast<int>(char_Color.G()));
             title += SEQUENCE_ARG_SEPARATOR;
-            title += std::to_string(static_cast<int>(char_color.b));
+            title += std::to_string(static_cast<int>(char_Color.B()));
             title += CLOSE_SEQUENCE;
             title += char_title[i];
         }
@@ -648,10 +681,10 @@ public:
             UI_Option &opt = options[i];
             std::string str_toPrint = "";
             UI_Option_Bar bar = _menu.getBar();
-            //Bar color
-            color c = _menu.getSelectedColor();
-            if(bar.bar_color != color{0, 0, 0}){
-                c = bar.bar_color;
+            //Bar Color
+            Color c = _menu.getSelectedColor();
+            if(bar.bar_Color != Color{0, 0, 0}){
+                c = bar.bar_Color;
             }
             //bar left
             std::string bar_left = bar.before_option;
@@ -661,38 +694,38 @@ public:
 
             str_toPrint += ESC_COLOR_CODE;
             str_toPrint += FOREGROUND_SEQUENCE;
-            str_toPrint += std::to_string(static_cast<int>(c.r));
+            str_toPrint += std::to_string(static_cast<int>(c.R()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.g));
+            str_toPrint += std::to_string(static_cast<int>(c.G()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.b));
+            str_toPrint += std::to_string(static_cast<int>(c.B()));
             str_toPrint += CLOSE_SEQUENCE;
             str_toPrint += bar_left;
             option_length += bar_left.length();
-            //text color
+            //text Color
             c = _menu.getDefaultColor();
             if(i == _menu.getSelectedIndex()){
                 c = _menu.getSelectedColor();
             }
-            if(opt.overwriteColor != color{0, 0, 0}){
+            if(opt.overwriteColor != Color{0, 0, 0}){
                 c = opt.overwriteColor;
             }
 
             //text
             str_toPrint += ESC_COLOR_CODE;
             str_toPrint += FOREGROUND_SEQUENCE;
-            str_toPrint += std::to_string(static_cast<int>(c.r));
+            str_toPrint += std::to_string(static_cast<int>(c.R()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.g));
+            str_toPrint += std::to_string(static_cast<int>(c.G()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.b));
+            str_toPrint += std::to_string(static_cast<int>(c.B()));
             str_toPrint += CLOSE_SEQUENCE;
             str_toPrint += opt.text;
             option_length += opt.text.length();
-            //bar color
+            //bar Color
             c = _menu.getSelectedColor();
-            if(bar.bar_color != color{0, 0, 0}){
-                c = bar.bar_color;
+            if(bar.bar_Color != Color{0, 0, 0}){
+                c = bar.bar_Color;
             }
             //bar right
             std::string bar_right = bar.after_option;
@@ -702,11 +735,11 @@ public:
 
             str_toPrint += ESC_COLOR_CODE;
             str_toPrint += FOREGROUND_SEQUENCE;
-            str_toPrint += std::to_string(static_cast<int>(c.r));
+            str_toPrint += std::to_string(static_cast<int>(c.R()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.g));
+            str_toPrint += std::to_string(static_cast<int>(c.G()));
             str_toPrint += SEQUENCE_ARG_SEPARATOR;
-            str_toPrint += std::to_string(static_cast<int>(c.b));
+            str_toPrint += std::to_string(static_cast<int>(c.B()));
             str_toPrint += CLOSE_SEQUENCE;
             str_toPrint += bar_right;
 
@@ -748,16 +781,13 @@ uint32_t fnv1a32(const std::string &s) {
     return hash;
 }
 
-// Integer hue 0..359
 unsigned int hue_from_string_int(const std::string &s) {
     uint32_t h = fnv1a32(s);
     return h % 360u; // 0..359
 }
 
-// Floating-point hue 0..360 (continuous)
 double hue_from_string_double(const std::string &s) {
     uint32_t h = fnv1a32(s);
-    // map [0, 2^32-1] -> [0.0, 360.0)
     return (static_cast<double>(h) / 4294967296.0) * 360.0;
 }
 
