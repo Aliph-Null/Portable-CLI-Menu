@@ -326,8 +326,8 @@ public:
 
     void setTitleColor(std::function<color(double)> new_color_function) { colorFunction = new_color_function; }
 
-    void setTitleAligment(AvailableAlignments::EnumAlignment a) { titleAlignment = a; }
-    void setOptionsAligment(AvailableAlignments::EnumAlignment a) { optionsAlignment = a; }
+    void setTitleAlignment(AvailableAlignments::EnumAlignment a) { titleAlignment = a; }
+    void setOptionsAlignment(AvailableAlignments::EnumAlignment a) { optionsAlignment = a; }
 
     void setBar(const UI_Option_Bar& b) { bar = b; }
 
