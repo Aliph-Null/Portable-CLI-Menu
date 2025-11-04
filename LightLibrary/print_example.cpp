@@ -11,17 +11,14 @@ using namespace AvailableAlignments;
 cli_menu* global_menu = nullptr;
 
 
-/*
- * Example color functions to test gradient support
- */
-color rainbowGradient(double x) {
+Color rainbowGradient(double x) {
     double r = std::sin(6.2831 * x) * 127 + 128;
     double g = std::sin(6.2831 * x + 2.094) * 127 + 128;
     double b = std::sin(6.2831 * x + 4.188) * 127 + 128;
     return {(unsigned char)r, (unsigned char)g, (unsigned char)b};
 }
 
-color blueToPurple(double x) {
+Color blueToPurple(double x) {
     return {(unsigned char)(128 + 127 * std::sin(x * 3.1415)),
             (unsigned char)(0),
             (unsigned char)(255 * x)};

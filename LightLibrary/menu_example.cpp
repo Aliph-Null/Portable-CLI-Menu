@@ -34,7 +34,7 @@ void f_back(){
     global_menu->selectSubMenu("Main menu example");
 }
 
-color rainbowColor(double x){
+Color rainbowColor(double x){
     return HSLtoRGB(x * 720, 1.0, 0.5);
 }
 
