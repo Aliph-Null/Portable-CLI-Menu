@@ -22,7 +22,7 @@
 
 /* Console cursor macro (kept for compatibility) */
 #ifdef _WIN32
-    #define cursor(x, y) SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), (COORD){x, y})
+    #define cursor(x, y) SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{x, y})
 #else
     #define cursor(x, y) std::cout << "\033[" << (y+1) << ";" << (x+1) << "H"
 #endif
