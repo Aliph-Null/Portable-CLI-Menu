@@ -19,10 +19,17 @@
 #endif
 
 #ifdef _WIN32
-    #define cursor(x, y) SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), (COORD){x, y})
+    #include <windows.h>
+    inline void cursor(int x, int y) {
+        COORD pos = { static_cast<SHORT>(x), static_cast<SHORT>(y) };
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
+    }
 #else
-    #define cursor(x, y) std::cout << "\033[" << (y+1) << ";" << (x+1) << "H"
+    inline void cursor(int x, int y) {
+        std::cout << "\033[" << (y + 1) << ";" << (x + 1) << "H";
+    }
 #endif
+
 
 #define START_SEQUENCE "\033["
 #define ESC_COLOR_CODE "\033["
@@ -499,7 +506,7 @@ public:
         if (index < 0 || index >= static_cast<int>(submenus.size())) return;
         submenus.erase(submenus.begin() + index);
         if (selectedSubMenu >= static_cast<int>(submenus.size()))
-            selectedSubMenu = std::max(0, static_cast<int>(submenus.size()) - 1);
+            selectedSubMenu = (std::max)(0, static_cast<int>(submenus.size()) - 1);
     }
 
     void clearSubMenus() {
